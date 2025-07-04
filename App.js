@@ -1,17 +1,29 @@
 import React, { useState } from "react";
 import {StyleSheet, Text, View, TouchableOpacity, SafeAreaView,} from "react-native";
 
+
+const originalButtons = [
+  "/", "*", "-", "+",
+  "1", "2", "3", "C",
+  "4", "5", "6", "←",
+  "7", "8", "9", "=",
+  ".", "0",
+];
+
+const shuffleButtons = (buttonsArray) => {
+  const shuffled = [...buttonsArray];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export default function App() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState("");
 
-  const buttons = [
-    "/", "*", "-", "+",
-    "1", "2", "3", "C",
-    "4", "5", "6", "←",
-    "7", "8", "9", "=",
-    ".", "0",
-  ];
+  const [buttons, setButtons] = useState([...originalButtons]);
 
   const handlePress = (button) => {
     if (button === "C") {
@@ -23,6 +35,10 @@ export default function App() {
       try {
         const evalResult = eval(input);
         setResult("= " + evalResult);
+  
+        const shuffled = shuffleButtons([...originalButtons]);
+        setButtons(shuffled);
+  
       } catch (e) {
         setResult("Error");
       }
@@ -30,6 +46,7 @@ export default function App() {
       setInput(input + button);
     }
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>
