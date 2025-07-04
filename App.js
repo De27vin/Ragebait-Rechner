@@ -5,8 +5,11 @@ import {
   View,
   TouchableOpacity,
   SafeAreaView,
+  Platform,
 } from "react-native";
 import { Accelerometer } from "expo-sensors";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 const originalButtons = [
   "/", "*", "-", "+",
@@ -32,9 +35,18 @@ export default function App() {
   const [isFlat, setIsFlat] = useState(false);
 
   useEffect(() => {
-    Accelerometer.setUpdateInterval(500); 
-    const subscription = Accelerometer.addListener((data) => {
-      const { x, y, z } = data;
+    registerForPushNotificationsAsync();
+
+    const notificationInterval = setInterval(() => {
+      scheduleNotification();
+    }, 30000); 
+
+    return () => clearInterval(notificationInterval);
+  }, []);
+
+  useEffect(() => {
+    Accelerometer.setUpdateInterval(500);
+    const subscription = Accelerometer.addListener(({ x, y, z }) => {
       if (z < -0.9 && Math.abs(x) < 0.2 && Math.abs(y) < 0.2) {
         setIsFlat(true);
       } else {
@@ -91,6 +103,38 @@ export default function App() {
       </View>
     </SafeAreaView>
   );
+}
+
+async function registerForPushNotificationsAsync() {
+  if (Constants.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      alert("Permission for notifications not granted.");
+      return;
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync();
+    console.log("Expo Push Token:", token.data);
+  } else {
+    alert("Must use a physical device for notifications");
+  }
+}
+
+async function scheduleNotification() {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "📲 Calculator Reminder",
+      body: "Tap me! Your buttons may have moved 😏",
+    },
+    trigger: null, 
+  });
 }
 
 const styles = StyleSheet.create({
