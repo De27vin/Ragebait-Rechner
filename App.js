@@ -1,6 +1,12 @@
-import React, { useState } from "react";
-import {StyleSheet, Text, View, TouchableOpacity, SafeAreaView,} from "react-native";
-
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
+import { Accelerometer } from "expo-sensors";
 
 const originalButtons = [
   "/", "*", "-", "+",
@@ -22,8 +28,22 @@ const shuffleButtons = (buttonsArray) => {
 export default function App() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState("");
-
   const [buttons, setButtons] = useState([...originalButtons]);
+  const [isFlat, setIsFlat] = useState(false);
+
+  useEffect(() => {
+    Accelerometer.setUpdateInterval(500); 
+    const subscription = Accelerometer.addListener((data) => {
+      const { x, y, z } = data;
+      if (z < -0.9 && Math.abs(x) < 0.2 && Math.abs(y) < 0.2) {
+        setIsFlat(true);
+      } else {
+        setIsFlat(false);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const handlePress = (button) => {
     if (button === "C") {
@@ -35,18 +55,21 @@ export default function App() {
       try {
         const evalResult = eval(input);
         setResult("= " + evalResult);
-  
-        const shuffled = shuffleButtons([...originalButtons]);
-        setButtons(shuffled);
-  
+
+        if (!isFlat) {
+          setButtons(shuffleButtons([...originalButtons]));
+        }
       } catch (e) {
         setResult("Error");
       }
     } else {
       setInput(input + button);
     }
+
+    if (isFlat) {
+      setButtons(shuffleButtons([...originalButtons]));
+    }
   };
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,8 +92,6 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
